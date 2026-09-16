@@ -3,12 +3,17 @@ import pygame
 import time
 import os
 import threading
+import tkinter
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0,0)
 
 pygame.init() 
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
-screen_width=2160
-screen_height=1080 
+root = tkinter.Tk()
+
+root.withdraw()
+screen_width=root.winfo_screenwidth()
+screen_height=root.winfo_screenheight()
 
 GREEN = (0, 255, 0)
 
@@ -81,31 +86,33 @@ def despawnWreckFunc(wreck):
         wreckage.remove(wreck)
 
 def resetPowerupTimer(powerToReset):
-    global powerTimer, activePowers, powerups
+    global shotPowerTimer, piercePowerTimer
 
-    try:
-        if shotPowerTimer.is_alive() and powerToReset == 'red':
+    if powerToReset == 'red':
+        try:
             shotPowerTimer.cancel()
-            shotPowerTimer = threading.Timer(15, shotPowerupTimer)
-            shotPowerTimer.start()
-    except:
-        pass
-    try:
-        if piercePowerTimer.is_alive() and powerToReset == 'blue':
+        except:
+            pass
+
+        shotPowerTimer = threading.Timer(15, shotPowerupTimer)
+        shotPowerTimer.start()
+
+    elif powerToReset == 'blue':
+        try:
             piercePowerTimer.cancel()
-            piercePowerTimer = threading.Timer(15, piercePowerupTimer)
-            piercePowerTimer.start()
-    except:
-        pass
-    
+        except:
+            pass
+
+        piercePowerTimer = threading.Timer(15, piercePowerupTimer)
+        piercePowerTimer.start()
     
 
 def shotPowerupTimer():
     global ifGreen, ifShotgun, ifPierce, activePowers
-    ifShotgun = ['red', False]
+    ifShotgun[1] = False
 def piercePowerupTimer():
     global ifGreen, ifShotgun, ifPierce, activePowers
-    ifPierce = ['blue', False]
+    ifPierce[1] = False
 
 def powerUpCollision():
     global powerups, ifGreen, powerTimer, ifPierce, ifShotgun
@@ -178,7 +185,7 @@ screen.fill((0, 0, 0))
 
 
 clock = pygame.time.Clock() 
-pygame.mixer.Sound('Assets/Bonus/music.mp3').play(loops=99999999)
+pygame.mixer.Sound('Assets/Bonus/music.mp3').play(loops=10)
 ifGreen = ['green', True]
 ifPierce = ['blue', False]
 ifShotgun = ['red', False]
@@ -204,10 +211,11 @@ enemySpawnThread = threading.Thread(target=spawnEnemies, daemon=True)
 enemySpawnThread.start()
 screen.blit(player.image, (screen_width/2 - 35, screen_height - 150))
 while keep_playing==True: 
-    for event in pygame.event.get(): 
-        if event.type == pygame.QUIT: 
-            keep_playing = False
     keys = pygame.key.get_pressed()
+    for event in pygame.event.get(): 
+        if event.type == pygame.QUIT or keys[pygame.K_ESCAPE]: 
+            keep_playing = False
+    
     if keys[pygame.K_d]:
         if x < screen_width - 100:  
             player.x+=8
@@ -234,6 +242,7 @@ while keep_playing==True:
                 bullets.append([x + 42, screen_height - 200 + player.y, bullet_image1, pierces])
                 pierceWaitTime = 400
                 recentShotPierce = (time.time()) * 1000
+                pygame.mixer.Sound('Assets/Bonus/sfx_laser2.ogg').play()
             if ifShotgun[1] and (((time.time()) * 1000) - recentShot) > shotWaitTime:
                 shotWaitTime = 650
                 pierces = 1
@@ -241,13 +250,15 @@ while keep_playing==True:
                 bullets.append([x - 22, screen_height - 200 + player.y, bullet_image2, pierces])
                 bullets.append([x + 102, screen_height - 200 + player.y, bullet_image2, pierces])
                 recentShot = (time.time()) * 1000
+                pygame.mixer.Sound('Assets/Bonus/sfx_laser2.ogg').play()
             if ifGreen[1] and (((time.time()) * 1000) - recentShotGreen) > greenWaitTime:
                 pierces = 1
                 greenWaitTime = 250
                 bullets.append([x + 42, screen_height - 200 + player.y, bullet_image3, pierces])
                 recentShotGreen = (time.time()) * 1000
+                pygame.mixer.Sound('Assets/Bonus/sfx_laser2.ogg').play()
             
-            pygame.mixer.Sound('Assets/Bonus/sfx_laser2.ogg').play()
+            
     screen.fill((0,0,0))
     if (screen_width/2 - 35) + player.x <= 0:
         x = 0
