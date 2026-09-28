@@ -1,4 +1,5 @@
 import random
+import requests
 try:
     import pygame
 except ModuleNotFoundError:
@@ -37,7 +38,7 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__()
         self.x = 0
         self.y = 0
-        self.increase = 0.5
+        self.increase = 0.25
         self.points = 0
         self.health = 0
         self.bulletids = []
@@ -77,23 +78,26 @@ def spawnEnemies():
     global enemies
     enemiesSpawn = 9
     while True:
-        if enemiesSpawn > 10:
-            enemySpeed=0.5
+        if len(enemies) > 125 and enemiesSpawn > 30:
+            enemySpeed=0.25
         else:    
             enemiesSpawn+=1
-        time.sleep(5)
+        time.sleep(10)
         randMode = random.randint(1, 4)
-        for i in range(enemiesSpawn):
-            enemy = Enemy()
-            enemy.mode(randMode)
-            enemy.x = random.randint(50, screen_width - 100)
-            enemy.y = random.randint(-200, -100)
-            try:
-                if enemiesSpawn > 25:
-                    enemy.increase += enemySpeed
-            except:
-                pass
-            enemies.append(enemy)
+        if len(enemies) > 125:
+            pass
+        else:
+            for i in range(enemiesSpawn):
+                enemy = Enemy()
+                enemy.mode(randMode)
+                enemy.x = random.randint(50, screen_width - 100)
+                enemy.y = random.randint(-200, -100)
+                try:
+                    if enemiesSpawn > 20 or len(enemies):
+                        enemy.increase += enemySpeed
+                except:
+                    pass
+                enemies.append(enemy)
 
 def despawnWreckFunc(wreck):
     global wreckage
@@ -210,7 +214,6 @@ def typeUsername():
     username = []
     curTime = time.time() * 1000
     waittime = 50
-
     while usernameTyping:
         for event in pygame.event.get():
             keys = pygame.key.get_pressed()
@@ -243,51 +246,21 @@ def typeUsername():
 
     return ''.join(username)
 
-
-def typePassword():
-    screen.fill((0, 0, 0))
-    passwordTyping = True
-    password = []
-    curTime = time.time() * 1000
-    waittime = 50
-
-    while passwordTyping:
-        for event in pygame.event.get():
-            keys = pygame.key.get_pressed()
-            if event.type == pygame.QUIT or keys[pygame.K_ESCAPE]:
-                pygame.quit()
-                quit()
-
-            if event.type == pygame.KEYDOWN:
-                elapsed = (time.time() * 1000) - curTime
-                if elapsed >= waittime:
-                    if event.key == pygame.K_BACKSPACE:
-                        if password:
-                            password.pop()
-                            curTime = time.time() * 1000
-                    elif event.key == pygame.K_RETURN:
-                        passwordTyping = False
-                    else:
-                        char_pressed = event.unicode
-                        if char_pressed and char_pressed.isprintable():
-                            password.append(char_pressed)
-                            curTime = time.time() * 1000
-
-        masked = '*' * len(password)
-        screen.fill((0, 0, 0))
-        passwordPrompt = font.render('Type Your Password:', True, (255, 255, 255))
-        passwordInput = font.render(masked, True, (255, 255, 255))
-        screen.blit(passwordPrompt, (screen_width/2, 300))
-        screen.blit(passwordInput, (screen_width/2, 500))
-        pygame.display.update()
-
-    return ''.join(password)
-
-
 def makeAccount():
     username = typeUsername()
-    password = typePassword()
-    return username, password
+    return [username]
+def sendData(tupledData):
+    global player
+    url = 'http://10.30.1.18:5000/api/data'
+    jsonData = {
+        'Username': f'{tupledData[0]}',
+        'Score': f'{player.score}'
+    }
+    response = requests.post(url, json=jsonData)
+    if response.status_code == 200:
+        print('Succesful!')
+    else:
+        print("Failed")
 
 
 screen = pygame.display.set_mode((screen_width, screen_height)) 
@@ -443,7 +416,7 @@ if gameOver:
                     game()
                 elif keys[pygame.K_RETURN]:
                     accountInfo = makeAccount()
-                    print(accountInfo)
+                    sendData(accountInfo)
                     gameOverScreen = True
 
             screen.blit(gameOverMsg, (screen_width/2, 100))
